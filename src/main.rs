@@ -411,6 +411,35 @@ impl AppState {
         self.redraw(stdout)?;
         Ok(())
     }
+
+    fn load_layers(&mut self) -> Result<()> {
+        for i in 0..10 {
+            let filename = format!("./output_layer_{}.txt", i);
+            if let Ok(lines) = std::fs::read_to_string(&filename) {
+                let layer_data: Vec<Vec<char>> =
+                    lines.lines().map(|line| line.chars().collect()).collect();
+
+                // Validate layer data dimensions
+                if layer_data.len() > self.height
+                    || layer_data.iter().any(|row| row.len() > self.width)
+                {
+                    eprintln!(
+                        "Warning: Layer {} data dimensions exceed canvas size. Skipping.",
+                        i
+                    );
+                    continue;
+                }
+
+                // Copy data to layer
+                for (y, row) in layer_data.iter().enumerate() {
+                    for (x, &ch) in row.iter().enumerate() {
+                        self.layers[i].data[y][x] = ch;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 fn main() -> Result<()> {
@@ -430,6 +459,7 @@ fn main() -> Result<()> {
     enable_raw_mode()?;
     let mut stdout = stdout();
     let mut app_state = AppState::new(width, height);
+    app_state.load_layers()?;
 
     app_state.redraw(&mut stdout)?;
 
